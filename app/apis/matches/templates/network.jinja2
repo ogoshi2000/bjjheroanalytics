@@ -1,0 +1,104 @@
+<html>
+<head>
+    <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+
+    <style type="text/css">
+        #mynetwork {
+            width: 1200px;
+            height: 800px;
+            border: 1px solid lightgray;
+        }
+    </style>
+</head>
+<body>
+<div id="mynetwork"></div>
+
+<script type="text/javascript">
+    // create an array with nodes
+    var nodes = new vis.DataSet([
+        {% for node in nodes %}
+        {id: {{ node.id }}, label: '{{ node.label }}'}{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ]);
+
+    // create an array with edges
+    var edges = new vis.DataSet([
+        {% for edge in edges %}
+        {from: {{ edge.from }}, to: {{ edge.to }}}{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ]);
+
+    // create a network
+    var container = document.getElementById('mynetwork');
+
+    // provide the data in the vis format
+    var data = {
+        nodes: nodes,
+        edges: edges
+    };
+    var options = {
+    groups: {
+        failure: {
+            color: {
+                background: 'red'
+            }
+        },
+        state: {
+            color: {
+                background: 'lime'
+            }
+        },
+        startstate: {
+            font: {
+                size: 33,
+                color: 'white'
+            },
+            color: {
+                background: 'blueviolet'
+            }
+        },
+        finalstate: {
+            font: {
+                size: 33,
+                color: 'white'
+            },
+            color: {
+                background: 'blue'
+            }
+        }
+    },
+    edges: {
+        smooth: {
+            enabled: false,
+            type: 'continuous'
+        }
+    },
+    physics: {
+        adaptiveTimestep: true,
+        repulsion: {
+            nodeDistance: 2000,
+            centralGravity: 0.002,
+            springLength: 400,
+            springConstant: 0.001,
+        },
+        barnesHut: {
+            gravitationalConstant: -1000000,
+            springConstant: 0.001,
+            springLength: 200,
+
+        },
+        stabilization: {
+            iterations: 987
+        }
+    },
+    layout: {
+        randomSeed: 191006,
+        improvedLayout: false
+    }
+};
+
+    // initialize your network!
+    var network = new vis.Network(container, data, options);
+</script>
+</body>
+</html>
