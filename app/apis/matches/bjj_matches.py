@@ -10,13 +10,33 @@ bjj_matches = Blueprint("bjj_matches", __name__, template_folder="templates")
 @bjj_matches.route("/", methods=["GET", "POST"])
 def match():
     if request.method == "GET":
-        matches = Match.query.all()
-        return [match.to_dict() for match in matches]
+        try:
+            matches = Match.query.all()
+            return [match.to_dict() for match in matches]
+        except Exception as e:
+            return str(e), 500
     if request.method == "POST":
-        data = request.get_json()
-        if isinstance(data, list):
-            matches = []
-            for match_data in data:
+        try:
+            data = request.get_json()
+            if isinstance(data, list):
+                matches = []
+                for match_data in data:
+                    match = Match(
+                        fighter_id=get_fighter_id_by_name(match_data["name"]),
+                        opponent=match_data["opponent"],
+                        opponent_id=get_fighter_id_by_name(match_data["opponent"]),
+                        w_l=match_data["w_l"],
+                        method=match_data["method"],
+                        competition=match_data["competition"],
+                        stage=match_data["stage"],
+                        weight=match_data["weight"],
+                        year=match_data["year"],
+                    )
+                    matches.append(match)
+                db.session.add_all(matches)
+                db.session.commit()
+                return [match.to_dict() for match in matches]
+            else:
                 match = Match(
                     fighter_id=get_fighter_id_by_name(match_data["name"]),
                     opponent=match_data["opponent"],
@@ -28,39 +48,31 @@ def match():
                     weight=match_data["weight"],
                     year=match_data["year"],
                 )
-                matches.append(match)
-            db.session.add_all(matches)
-            db.session.commit()
-            return [match.to_dict() for match in matches]
-        else:
-            match = Match(
-                fighter_id=get_fighter_id_by_name(match_data["name"]),
-                opponent=match_data["opponent"],
-                opponent_id=get_fighter_id_by_name(match_data["opponent"]),
-                w_l=match_data["w_l"],
-                method=match_data["method"],
-                competition=match_data["competition"],
-                stage=match_data["stage"],
-                weight=match_data["weight"],
-                year=match_data["year"],
-            )
-            db.session.add(match)
-            db.session.commit()
-            return match.to_dict()
+                db.session.add(match)
+                db.session.commit()
+                return match.to_dict()
+        except Exception as e:
+            return str(e), 500
 
 
 @bjj_matches.route("/methods", methods=["GET"])
 def get_methods():
-    methods = Match.query.with_entities(Match.method).distinct().all()
-    return [method[0] for method in methods]
+    try:
+        methods = Match.query.with_entities(Match.method).distinct().all()
+        return [method[0] for method in methods]
+    except Exception as e:
+        return str(e), 500
 
 
 @bjj_matches.route("/network", methods=["GET"])
 def get_network():
-    matches = Match.query.filter(Match.opponent_id.isnot(None)).all()
-    fighters = Fighter.query.all()
-    nodes = [{"id": fighter.id, "label": fighter.name} for fighter in fighters]
-    edges = list(frozenset((match.fighter.id, match.opponent_id) for match in matches))
-    edges = [{"from": edge[0], "to": edge[1]} for edge in edges]
-    
-    return render_template("network.jinja2", nodes=nodes, edges=edges)
+    try:
+        matches = Match.query.filter(Match.opponent_id.isnot(None)).all()
+        fighters = Fighter.query.all()
+        nodes = [{"id": fighter.id, "label": fighter.name} for fighter in fighters]
+        edges = list(frozenset((match.fighter.id, match.opponent_id) for match in matches))
+        edges = [{"from": edge[0], "to": edge[1]} for edge in edges]
+        
+        return render_template("network.jinja2", nodes=nodes, edges=edges)
+    except Exception as e:
+        return str(e), 500
