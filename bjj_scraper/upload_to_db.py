@@ -17,7 +17,6 @@ def upload_matches_to_db():
             for match in fighter["TableData"]:
                 match = { **{"name": fighter["Name"]}, **match }
                 matches.append(match)
-    print(matches)
     requests.post("http://localhost:5000/matches/", json=matches)
        
 if __name__ == "__main__":

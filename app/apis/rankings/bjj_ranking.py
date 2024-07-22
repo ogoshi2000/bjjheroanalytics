@@ -1,65 +1,70 @@
 from flask.blueprints import Blueprint
-from app.models import Match, Fighter
+from app.models import Match, Fighter, db
+from sqlalchemy import func, case, desc, text
 
 bjj_ranking = Blueprint("bjj_ranking", __name__, template_folder="templates")
-
-
-def score_by_win(w_l):
-    return 1 if w_l == "W" else -1 if w_l == "L" else 0
-
-
-def score_by_method(w_l, method):
-    if w_l == "W":
-        if method in ["Referee Decision", "Advantages", "DQ"]:
-            return 1
-        elif method.startswith("Pts:"):
-            return 2
-        else:
-            return 3
-    elif w_l == "L":
-        if method in ["Referee Decision", "Advantages", "DQ"]:
-            return -1
-        elif method.startswith("Pts:"):
-            return -2
-        else:
-            return -3
-    else:
-        return 0
 
 
 @bjj_ranking.route("/score-by-wins", methods=["GET"])
 def get_score_by_wins():
     try:
-        fighters = Fighter.query.join(Match, Fighter.id == Match.fighter_id).all()
-        fighter_scores = [
-            {
-                "fighter": fighter.name,
-                "score": sum(score_by_win(match.w_l) for match in fighter.matches),
-            }
-            for fighter in fighters
-        ]
-        return sorted(fighter_scores, key=lambda x: x["score"], reverse=True)
-
+        score = (
+            db.session.query(
+                func.sum(
+                    case((Match.w_l == "W", 1), (Match.w_l == "L", -1), else_=0)
+                ).label("score"),
+                Fighter.name,
+                func.count(Match.id).label("matches"),
+            )
+            .join(Fighter, Fighter.id == Match.fighter_id)
+            .group_by(Fighter.name)
+            .order_by(desc("score"))
+            .all()
+        )
+        return [{"rank":rank+1,"fighter": fighter.name, "score": fighter.score, "matches":fighter.matches} for rank,fighter in  enumerate(score)]
     except Exception as e:
         return str(e), 500
 
 
 @bjj_ranking.route("/score-by-method", methods=["GET"])
 def get_score_by_method():
-    try:
-        fighter_scores = []
-        fighters = Fighter.query.join(Match, Fighter.id == Match.fighter_id).all()
-        fighter_scores = [
-            {
-                "fighter": fighter.name,
-                "score": sum(
-                    score_by_method(match.w_l, match.method)
-                    for match in fighter.matches
+    def calculate_method():
+        stmnt = case(
+            (
+                text(
+                    "Match.w_l = 'W' AND Match.method IN ('Referee Decision','Advantages','DQ','Pen','N/A')"
                 ),
-            }
-            for fighter in fighters
-        ]
-        sorted_scores = sorted(fighter_scores, key=lambda x: x["score"], reverse=True)
-        return sorted_scores
+                1,
+            ),
+            (text("Match.w_l = 'W' AND Match.method LIKE 'Pts:%'"), 2),
+            (text("Match.w_l = 'W'"), 3),
+            (
+                text(
+                    "Match.w_l = 'L' AND Match.method IN ('Referee Decision','Advantages','DQ','Pen','N/A')"
+                ),
+                -1,
+            ),
+            (text("Match.w_l = 'L' AND Match.method LIKE 'Pts:%'"), -2),
+            (text("Match.w_l = 'L'"),-3),
+            else_=0,
+        )
+
+        return stmnt
+
+    try:
+        score = (
+            db.session.query(
+                Fighter.name,
+                func.sum(calculate_method()).label("score"),
+                func.count(Match.id).label("matches"),
+            )
+            .select_from(Match)
+            .join(Fighter, Fighter.id == Match.fighter_id)
+            .group_by(Fighter.name)
+            .order_by(desc("score"))
+            .all()
+        )
+        return [{"rank":rank+1,"fighter": fighter.name, "score": fighter.score, "matches":fighter.matches} for rank,fighter in  enumerate(score)]
+
     except Exception as e:
         return str(e), 500

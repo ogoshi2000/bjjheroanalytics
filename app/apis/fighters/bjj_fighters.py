@@ -20,8 +20,9 @@ def fighter_by_id(id):
 def fighter():
     try:
         if request.method == "GET":
-            fighters = Fighter.query.all()
-            return [fighter.to_dict() for fighter in fighters]
+            fighters = db.session.execute(db.select(Fighter)).scalars().all()
+            fighters = [fighter.to_dict() for fighter in fighters]
+            return fighters
 
         if request.method == "POST":
             data = json.loads(request.get_json())
@@ -52,13 +53,11 @@ def get_fighter_id():
 @bjj_fighters.route("/untracked", methods=["GET"])
 def get_untracked_fighters():
     try:
-        untracked_fighters = (
-            Match.query.filter_by(opponent_id=None)
-            .distinct(Match.opponent)
-            .with_entities(Match.opponent)
-            .all()
-        )
-        return [untracked_fighter[0] for untracked_fighter in untracked_fighters]
+        untracked_fighters = db.session.execute(db.select(Match).where(Match.opponent_id is None)).all()
+
+        untracked_fighters = [untracked_fighter[0] for untracked_fighter in untracked_fighters]
+        
+        return untracked_fighters
     except Exception as e:
         return str(e), 500
 
@@ -69,3 +68,4 @@ def get_fighter_id_by_name(name):
         return fighter_id[0] if fighter_id else None
     except Exception as e:
         return str(e), 500
+

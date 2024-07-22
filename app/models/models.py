@@ -31,11 +31,10 @@ class Match(db.Model):
     weight = db.Column(db.String(100), nullable=True)
     year = db.Column(db.Integer, nullable=False)
 
-    # Relationship to the Fighter model
     fighter = db.relationship(
         "Fighter", foreign_keys=[fighter_id], backref=db.backref("matches", lazy=True)
     )
-    # Optional relationship to the Fighter model for the opponent (if exists in fighters table)
+    
     opponent_fighter = db.relationship(
         "Fighter",
         foreign_keys=[opponent_id],

@@ -71,19 +71,23 @@
         smooth: {
             enabled: false,
             type: 'continuous'
+            
+        },
+        color: {
+            color: 'black'
         }
     },
     physics: {
         adaptiveTimestep: true,
         repulsion: {
-            nodeDistance: 2000,
-            centralGravity: 0.002,
-            springLength: 400,
-            springConstant: 0.001,
+            nodeDistance: 10000,
+            centralGravity: 0.01,
+            springLength: 1000,
+            springConstant: 0.04,
         },
         barnesHut: {
-            gravitationalConstant: -1000000,
-            springConstant: 0.001,
+            gravitationalConstant: -10000,
+            springConstant: 0.0001,
             springLength: 200,
 
         },
@@ -93,7 +97,7 @@
     },
     layout: {
         randomSeed: 191006,
-        improvedLayout: false
+        improvedLayout: true
     }
 };
 
