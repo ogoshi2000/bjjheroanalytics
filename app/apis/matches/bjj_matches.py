@@ -73,30 +73,37 @@ def get_competitions():
         return str(e), 500
 
 
+# @bjj_matches.route("/network", methods=["GET"])
+# def get_network():
+#     match_query = Match.query
+#     try:
+#         for k, v in request.args.items():
+#             if k in ["year", "method", "competition", "weight"]:
+#                 match_query = match_query.filter(getattr(Match, k) == v)
 
+#         matches = (
+#             match_query.filter(Match.opponent_id.isnot(None))
+#             .options(joinedload(Match.fighter))
+#             .all()
+#         )
+#         fighters = list(
+#             frozenset((match.fighter.id, match.fighter.name) for match in matches)
+#         )
+#         nodes = [{"id": fighter[0], "label": fighter[1]} for fighter in fighters]
+#         edges = list(
+#             frozenset((match.fighter.id, match.opponent_id) for match in matches)
+#         )
+#         edges = [{"from": edge[0], "to": edge[1]} for edge in edges]
+
+#         return render_template("network.jinja2", nodes=nodes, edges=edges)
+#     except Exception as e:
+#         return str(e), 500
 
 @bjj_matches.route("/network", methods=["GET"])
-def get_network():
-    match_query = Match.query
+def get_netowrk_2():
     try:
-        for k, v in request.args.items():
-            if k in ["year", "method", "competition", "weight"]:
-                match_query = match_query.filter(getattr(Match, k) == v)
-
-        matches = (
-            match_query.filter(Match.opponent_id.isnot(None))
-            .options(joinedload(Match.fighter))
-            .all()
-        )
-        fighters = list(
-            frozenset((match.fighter.id, match.fighter.name) for match in matches)
-        )
-        nodes = [{"id": fighter[0], "label": fighter[1]} for fighter in fighters]
-        edges = list(
-            frozenset((match.fighter.id, match.opponent_id) for match in matches)
-        )
-        edges = [{"from": edge[0], "to": edge[1]} for edge in edges]
-
-        return render_template("network.jinja2", nodes=nodes, edges=edges)
+        edges = db.session.query(Match.fighter.name,Match.opponent_fighter.name).select_from(Match).distinct().all()
+        print(edges)
+        return "hi"
     except Exception as e:
         return str(e), 500
